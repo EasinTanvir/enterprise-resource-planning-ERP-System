@@ -19,9 +19,9 @@ Build the complete frontend UI for the physical-retail ERP with realistic determ
 - `src/app/globals.css`: existing global styles and visual tokens.
 - `src/proxy.js`: detects local, production, and Vercel preview subdomains; currently rewrites only a subdomain root request to `/s/[subdomain]`.
 - `src/lib/utils.js`: defines `rootDomain` from `NEXT_PUBLIC_ROOT_DOMAIN`, defaulting to `localhost:3000`.
-- `src/app/(admin)/layout.js` and tenant admin page placeholders.
+- `src/app/(platform)/layout.js` and tenant admin page placeholders.
 - `src/app/(auth)/login/page.js` and `register/page.js` placeholders.
-- `src/app/(subdomain)/layout.js` and `src/app/(subdomain)/s/[subdomain]/page.js` placeholders.
+- `src/app/(tenants)/layout.js` and `src/app/(tenants)/s/[subdomain]/page.js` placeholders.
 - `src/components/erp-app.js`: older client-side pathname router and tenant shell. Reuse selectively, but do not let it replace real App Router pages.
 
 ## Product Context
@@ -43,7 +43,7 @@ Parenthesized route groups are organizational and do not appear in public URLs.
 - `http://localhost:3000/admin/tenants/new`: create organization and configure its initial tenant identity.
 - `http://localhost:3000/admin/tenants/[tenantId]`: organization details, status, lifetime license, and management actions.
 
-These pages belong under `src/app/(admin)/` and use the admin layout. They are not tenant workspace pages.
+These pages belong under `src/app/(platform)/` and use the platform layout. They are not tenant workspace pages.
 
 ### Authentication
 
@@ -55,7 +55,7 @@ These pages belong under `src/app/(auth)/` and use an access-focused layout with
 
 ### Tenant subdomains
 
-For tenant slug `abc`, the public origin is `http://abc.localhost:3000/`. The proxy detects `abc` and internally maps the request to routes below `src/app/(subdomain)/s/[subdomain]/`.
+For tenant slug `abc`, the public origin is `http://abc.localhost:3000/`. The proxy detects `abc` and internally maps the request to routes below `src/app/(tenants)/s/[subdomain]/`.
 
 Examples:
 
@@ -69,7 +69,7 @@ The current `proxy.js` rewrites only the subdomain root. Before declaring nested
 
 ## Tenant Page Inventory
 
-Implement these pages under `src/app/(subdomain)/s/[subdomain]/` with a shared tenant layout:
+Implement these pages under `src/app/(tenants)/s/[subdomain]/` with a shared tenant layout:
 
 - `/` - dashboard
 - `/customers` and `/customers/[customerId]`
@@ -93,7 +93,7 @@ Dynamic pages must read route params and render tenant-specific records. Do not 
 
 ## Platform Admin Page Requirements
 
-Expand the existing admin placeholders under `src/app/(admin)/`:
+Expand the existing platform admin placeholders under `src/app/(platform)/`:
 
 - `/admin/tenants`: searchable/filterable organization table with status, lifetime-license state, slug, owner, creation date, and actions.
 - `/admin/tenants/new`: organization form with name, slug validation, owner/admin details, and lifetime-license setup UI.
@@ -135,9 +135,9 @@ Use platform-level dummy data separate from tenant business data. Do not display
 - `src/lib/utils.js` for small host/subdomain URL helpers, if required.
 - `src/app/layout.js` and `src/app/globals.css`.
 - `src/app/page.js` for the main-domain entry experience.
-- `src/app/(admin)/layout.js` and admin routes.
+- `src/app/(platform)/layout.js` and platform admin routes.
 - `src/app/(auth)/layout.js` and auth routes.
-- `src/app/(subdomain)/layout.js`, `src/app/(subdomain)/s/[subdomain]/layout.js`, and tenant routes.
+- `src/app/(tenants)/layout.js`, `src/app/(tenants)/s/[subdomain]/layout.js`, and tenant routes.
 - Reusable components/data/helpers under `src/components`, `src/lib`, and/or `src/app`.
 - `package.json` only if a genuinely required dependency is missing; reuse installed packages first.
 

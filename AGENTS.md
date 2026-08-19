@@ -2244,7 +2244,7 @@ Before implementing any feature:
 5. Reuse existing code whenever possible.
 6. Create a detailed prompt inside `prompts/`.
 7. Ask for approval.
-8. Wait for approval.
+8. On approval re read approved prompt file in the prompts/ and implement it strictly. Wait for approval.
 9. Re-read the approved prompt.
 10. Implement only the requested feature.
 11. Preserve tenant isolation.
