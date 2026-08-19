@@ -2,174 +2,178 @@
 
 ## Goal
 
-Build the complete frontend UI for the physical-retail ERP using realistic dummy data. The result should feel like a deliberate, production-style business application rather than a generated dashboard mockup.
+Build the complete frontend UI for the physical-retail ERP with realistic deterministic dummy data. Preserve the new multi-tenant Next.js App Router structure. This prompt covers frontend routes, layouts, components, local state, and visual behavior only. Do not implement backend APIs, database work, authentication infrastructure, or RLS in this frontend pass.
 
 ## Skills Read
 
 - `AGENTS.md`
-- `.agents/skills/neon-postgres/SKILL.md` (not needed for dummy-data UI implementation)
-- Next.js 16 App Router conventions
+- Next.js 16 App Router conventions, including `proxy.js` replacing `middleware.js`
 - Tailwind CSS v4 conventions
+- Vercel Platforms multi-tenant example: `https://github.com/vercel/platforms`
+- `.agents/skills/neon-postgres/SKILL.md` is not required for dummy-data-only UI work
 
 ## Existing Code Inspected
 
-- `package.json`: Next.js 16.3.1, React 19.2.8, Tailwind CSS 4; no form or icon library installed.
-- `src/app/page.js`: placeholder page only.
-- `src/app/layout.js`: Geist font shell and default metadata.
-- `src/app/globals.css`: Tailwind import only.
-- `postcss.config.mjs`: Tailwind v4 PostCSS plugin.
+- `package.json`: Next.js 16.3.1, React 19.2.8, Tailwind CSS 4, `lucide-react`, and `react-hook-form` are installed.
+- `src/app/layout.js`: root document shell, Geist fonts, and metadata.
+- `src/app/globals.css`: existing global styles and visual tokens.
+- `src/proxy.js`: detects local, production, and Vercel preview subdomains; currently rewrites only a subdomain root request to `/s/[subdomain]`.
+- `src/lib/utils.js`: defines `rootDomain` from `NEXT_PUBLIC_ROOT_DOMAIN`, defaulting to `localhost:3000`.
+- `src/app/(admin)/layout.js` and tenant admin page placeholders.
+- `src/app/(auth)/login/page.js` and `register/page.js` placeholders.
+- `src/app/(subdomain)/layout.js` and `src/app/(subdomain)/s/[subdomain]/page.js` placeholders.
+- `src/components/erp-app.js`: older client-side pathname router and tenant shell. Reuse selectively, but do not let it replace real App Router pages.
 
 ## Product Context
 
-This is a multi-tenant physical retail ERP. UI scope covers store operations: dashboard, customers, products, categories, inventory, suppliers, purchasing, sales, returns, invoices, payments, reports, employees, roles, notifications, audit logs, and settings. Do not add ecommerce, online ordering, subscriptions, or unrelated modules.
+This is a multi-tenant SaaS ERP for physical retail organizations. The main domain belongs to the platform owner, who creates and manages organizations. Each organization operates its own ERP workspace on a subdomain.
+
+UI scope includes dashboard, customers, products, categories, inventory, suppliers, purchasing, sales, returns, invoices, payments, reports, employees, roles, notifications, audit logs, and settings.
+
+Do not add ecommerce, online storefronts, shopping carts, online checkout, online ordering, marketplace features, recurring subscriptions, complex accounting, payroll, HR, manufacturing, or unrelated modules.
+
+## Route Architecture
+
+Parenthesized route groups are organizational and do not appear in public URLs.
+
+### Main domain and platform admin
+
+- `http://localhost:3000/`: main-domain entry or platform owner landing experience.
+- `http://localhost:3000/admin/tenants`: organization list and platform administration.
+- `http://localhost:3000/admin/tenants/new`: create organization and configure its initial tenant identity.
+- `http://localhost:3000/admin/tenants/[tenantId]`: organization details, status, lifetime license, and management actions.
+
+These pages belong under `src/app/(admin)/` and use the admin layout. They are not tenant workspace pages.
+
+### Authentication
+
+- `http://localhost:3000/login`
+- `http://localhost:3000/register`
+- `http://localhost:3000/forgot-password`
+
+These pages belong under `src/app/(auth)/` and use an access-focused layout without tenant navigation. Registration is platform/account onboarding, not online customer registration.
+
+### Tenant subdomains
+
+For tenant slug `abc`, the public origin is `http://abc.localhost:3000/`. The proxy detects `abc` and internally maps the request to routes below `src/app/(subdomain)/s/[subdomain]/`.
+
+Examples:
+
+- `http://abc.localhost:3000/` -> internal `/s/abc`
+- `http://abc.localhost:3000/customers` -> internal `/s/abc/customers`
+- `http://abc.localhost:3000/products/p-1` -> internal `/s/abc/products/p-1`
+
+Never show `/s/abc` in tenant-facing links or navigation. Preserve the dynamic `subdomain` route parameter as tenant UI context and use tenant-scoped dummy data.
+
+The current `proxy.js` rewrites only the subdomain root. Before declaring nested tenant URLs complete, extend the routing strategy so every supported tenant pathname maps to `/s/[subdomain]/...` without exposing that internal path. Preserve exclusions for API routes, Next internals, and public files. A subdomain must not enter the platform admin shell.
+
+## Tenant Page Inventory
+
+Implement these pages under `src/app/(subdomain)/s/[subdomain]/` with a shared tenant layout:
+
+- `/` - dashboard
+- `/customers` and `/customers/[customerId]`
+- `/products` and `/products/[productId]`
+- `/categories`
+- `/inventory` and `/inventory/movements`
+- `/suppliers` and `/suppliers/[supplierId]`
+- `/purchases`, `/purchases/new`, and `/purchases/[purchaseId]`
+- `/sales`, `/sales/new`, and `/sales/[saleId]`
+- `/returns`, `/returns/new`, and `/returns/[returnId]`
+- `/invoices` and `/invoices/[invoiceId]`
+- `/payments` and `/payments/[paymentId]`
+- `/reports`
+- `/employees` and `/employees/[employeeId]`
+- `/roles` and `/roles/[roleId]`
+- `/notifications`
+- `/audit-logs`
+- `/settings/company`, `/settings/invoice`, `/settings/tax`, and `/settings/profile`
+
+Dynamic pages must read route params and render tenant-specific records. Do not hard-code one tenant into page components.
+
+## Platform Admin Page Requirements
+
+Expand the existing admin placeholders under `src/app/(admin)/`:
+
+- `/admin/tenants`: searchable/filterable organization table with status, lifetime-license state, slug, owner, creation date, and actions.
+- `/admin/tenants/new`: organization form with name, slug validation, owner/admin details, and lifetime-license setup UI.
+- `/admin/tenants/[tenantId]`: organization summary, status controls, license details, activity, and contextual actions.
+
+Use platform-level dummy data separate from tenant business data. Do not display tenant sales, customers, or inventory on admin pages except as explicit platform summaries.
 
 ## Architecture Decisions
 
-- Keep the frontend in Next.js under `src/app`.
-- Use a reusable application shell with sidebar, top bar, breadcrumbs, page headers, filters, tables, status badges, drawers/modals, forms, empty states, loading states, and confirmation dialogs.
-- Use client components only where interaction/state is required.
-- Use local dummy data and local UI state; do not invent backend APIs.
-- Prefer reusable components and data-driven page configuration over duplicated page markup.
-- Add `react-hook-form` and a schema validation library if needed for reliable field-level validation. All interactive forms must use React Hook Form and display accessible validation messages beside invalid fields.
-- Use an existing icon library such as `lucide-react` for interface icons rather than hand-drawn SVG icons.
-- Use Tailwind CSS v4 and define the visual theme in `src/app/globals.css` with CSS custom properties and `@theme` integration where appropriate.
-- Preserve the existing JavaScript project configuration unless TypeScript is required for a dependency integration.
+- Keep frontend code in Next.js under `src/app`; keep the NestJS backend in `server/`, but do not add backend work for this prompt.
+- Use real App Router `page.js` files and layouts. Add `loading.js`, `error.js`, and `not-found.js` where useful.
+- Do not build the product as one client-side pathname switch.
+- Use separate but related auth, admin, and tenant shells.
+- Use client components only for interaction or local state.
+- Use local deterministic dummy data; do not invent backend APIs or pretend mutations persist remotely.
+- Use `subdomain` from the dynamic route as UI context. It is not an authorization mechanism.
+- Reuse data-driven components instead of duplicating shell, table, or form markup.
+- Use `react-hook-form` for interactive forms with accessible field-level validation messages.
+- Use `lucide-react` for icons and Tailwind CSS v4 with the existing `globals.css` theme.
+- Keep tenant navigation host-aware and use public subdomain-relative links. Admin and auth links target main-domain routes.
 
-## Visual Direction
+## UI Requirements
 
-Create a quiet, confident retail-operations interface:
-
-- Warm off-white workspace background, ink-colored text, graphite navigation, and a distinctive burnt-coral accent with restrained green/amber/red status colors.
-- Use Geist only if it remains the best fit; otherwise choose a purposeful, readable sans-serif already available without adding unnecessary font infrastructure.
-- Dense enough for scanning, with generous rhythm around major sections.
-- Avoid excessive cards, oversized hero text, generic purple gradients, decorative blobs, glassmorphism, and symmetrical dashboard filler.
-- Use tables and split layouts where operational users need comparison.
-- Keep cards at small radii and reserve them for repeated records, panels, and dialogs.
-- Use meaningful page-load/staggered reveal motion sparingly and respect reduced-motion preferences.
-
-## Pages and Routes
-
-Implement the following usable routes with realistic dummy data and consistent shell/navigation:
-
-### Access
-
-- `/login`
-- `/forgot-password`
-
-### Tenant workspace
-
-- `/dashboard`
-- `/customers`
-- `/customers/[customerId]`
-- `/products`
-- `/products/[productId]`
-- `/categories`
-- `/inventory`
-- `/inventory/movements`
-- `/suppliers`
-- `/suppliers/[supplierId]`
-- `/purchases`
-- `/purchases/new`
-- `/purchases/[purchaseId]`
-- `/sales`
-- `/sales/new`
-- `/sales/[saleId]`
-- `/returns`
-- `/returns/new`
-- `/returns/[returnId]`
-- `/invoices`
-- `/invoices/[invoiceId]`
-- `/payments`
-- `/payments/[paymentId]`
-- `/reports`
-- `/employees`
-- `/employees/[employeeId]`
-- `/roles`
-- `/roles/[roleId]`
-- `/notifications`
-- `/audit-logs`
-- `/settings/company`
-- `/settings/invoice`
-- `/settings/tax`
-- `/settings/profile`
-
-### Platform administration
-
-- `/admin/tenants`
-- `/admin/tenants/new`
-- `/admin/tenants/[tenantId]`
-
-Every list page needs search/filter affordances, realistic populated rows, empty/loading/error visual states, pagination or a clear compact alternative, and a primary action. Detail pages need summary information, activity/history, and contextual actions. Creation/edit flows need complete forms with validation. Sales and purchases should visually support line-item entry and totals. Reports should provide filters, KPI summaries, charts or visual summaries, and tabular detail.
-
-## Reusable UI Building Blocks
-
-Create a small local component system for:
-
-- App shell, sidebar, topbar, mobile navigation, breadcrumbs, page header.
-- Buttons, icon buttons with tooltips, inputs, selects, textareas, date range controls, checkboxes, segmented controls, tabs, dropdown menus.
-- Data table, pagination, filter bar, search field, stat row, chart/metric visual, status badge, avatar, empty state, loading skeleton, error state, toast, modal/drawer, confirmation dialog.
-- Form field wrappers integrated with React Hook Form, including label, hint, error, required state, and accessible IDs.
-- Domain-specific line-item editor for sale/purchase/return forms.
-
-## Dummy Data
-
-Use believable Bangladesh retail examples and BDT currency formatting: products such as smartphones and accessories, named customers/suppliers/employees, invoice numbers, SKU values, stock movement reasons, payment methods, and dates. Keep data deterministic and tenant-scoped in the UI. Avoid lorem ipsum and repetitive placeholder labels.
-
-## Form Requirements
-
-- Every input form uses React Hook Form.
-- Validate required fields, email formats, phone formats, numeric ranges, quantities, prices, and confirmation fields where relevant.
-- Show concise field-level messages and a form-level error state.
-- Prevent invalid submit, show pending/submitted feedback, and keep controls keyboard accessible.
-- Include validation for login, forgot-password, customer, product, supplier, purchase, sale, return, employee, role, settings, and tenant forms.
-
-## Responsive and Accessibility Requirements
-
-- Desktop: persistent navigation and dense operational content.
-- Tablet/mobile: collapsible navigation, horizontally scrollable tables where necessary, stacked filters, full-width primary actions, and forms that remain comfortable to complete.
-- Visible focus states, semantic headings, labels tied to controls, keyboard support, sufficient contrast, status conveyed by text as well as color, and reduced-motion support.
-- Stable dimensions for buttons, table rows, controls, and line-item columns so dynamic content does not shift layouts.
+- Tenant shell: sidebar, top bar, breadcrumbs, page header, filters, tables, badges, dialogs, forms, toasts, empty/loading/error states, and confirmation actions.
+- Admin shell: platform-oriented navigation and organization management views, not store operations navigation.
+- Auth shell: focused login, registration, and recovery experience without tenant navigation.
+- Lists: search/filter, realistic rows, primary action, pagination or compact alternative, and all meaningful states.
+- Details: summary, activity/history, status, and contextual actions.
+- Sales, purchasing, and returns: line-item entry, quantities, prices, discounts, tax, totals, and validation.
+- Reports: filters, KPI summaries, visual summaries, and tabular details.
+- Use believable Bangladesh retail examples and BDT currency formatting.
+- Desktop uses dense operational layouts; mobile uses collapsible navigation, stacked filters, scrollable tables, and full-width actions.
+- Provide visible focus states, semantic headings, labels, keyboard support, sufficient contrast, text-based status meaning, stable control dimensions, and reduced-motion support.
+- Use the existing restrained retail visual direction: warm workspace, ink text, graphite navigation, burnt-coral accent, and restrained status colors. Avoid generic purple gradients, decorative blobs, glassmorphism, excessive cards, and oversized hero text.
 
 ## Files Likely To Change
 
-- `package.json` and `package-lock.json`
-- `src/app/layout.js`
-- `src/app/globals.css`
-- `src/app/page.js`
-- New reusable components/data/helpers under `src/components`, `src/lib`, and/or `src/app` following the smallest clear structure.
-- New route files under `src/app/**`.
+- `src/proxy.js` for complete public-subdomain-to-internal-route rewriting, if required.
+- `src/lib/utils.js` for small host/subdomain URL helpers, if required.
+- `src/app/layout.js` and `src/app/globals.css`.
+- `src/app/page.js` for the main-domain entry experience.
+- `src/app/(admin)/layout.js` and admin routes.
+- `src/app/(auth)/layout.js` and auth routes.
+- `src/app/(subdomain)/layout.js`, `src/app/(subdomain)/s/[subdomain]/layout.js`, and tenant routes.
+- Reusable components/data/helpers under `src/components`, `src/lib`, and/or `src/app`.
+- `package.json` only if a genuinely required dependency is missing; reuse installed packages first.
 
 ## Implementation Plan
 
-1. Add minimal UI dependencies for forms, validation, and icons.
-2. Establish theme tokens, base styles, typography, focus states, and utility classes in `globals.css`.
-3. Build the reusable shell and primitives.
-4. Build representative route templates and domain components.
-5. Add all required list, detail, create/edit, report, and settings routes using deterministic dummy data.
-6. Add route-aware active navigation, responsive behavior, dialogs, toasts, and form validation.
-7. Update metadata and root redirect/landing behavior appropriately.
-8. Run lint and production build; fix only issues caused by this feature.
+1. Confirm the route tree and read current Next.js 16 proxy guidance.
+2. Establish theme tokens, typography, focus states, and utilities in `globals.css`.
+3. Build separate auth, admin, and tenant layouts.
+4. Make root and nested subdomain paths rewrite correctly while keeping `/s/[subdomain]` internal.
+5. Build shared primitives and deterministic platform/tenant data helpers.
+6. Add all tenant and platform admin pages in the inventory above.
+7. Add host-aware navigation, responsive behavior, dialogs, toasts, and validation.
+8. Add route-level loading, empty, error, and not-found handling where appropriate.
+9. Run frontend checks and fix only issues caused by this work.
 
 ## Acceptance Criteria
 
-- All listed routes render without runtime errors and share a coherent professional ERP shell.
-- The visual system is defined in `globals.css` and uses Tailwind CSS v4 utilities.
-- Reusable components are used across pages; there is no copy-pasted page shell or form-field markup.
-- Forms use React Hook Form with proper validation messages and accessible labels.
-- Dummy data feels like a real physical retail operation and uses BDT consistently.
-- The UI is responsive and usable at desktop and mobile widths.
+- Main-domain admin, auth, and subdomain tenant routes use the correct layout group and render without runtime errors.
+- `http://localhost:3000/admin/tenants` remains platform administration, while `http://abc.localhost:3000/` opens the `abc` tenant workspace.
+- Supported tenant paths work from a subdomain without exposing `/s/[subdomain]` in browser-facing links.
+- Tenant UI data changes with the subdomain context and is never mixed with platform-admin data.
+- A subdomain cannot enter the platform admin shell through normal tenant navigation.
+- Components are reusable, forms use React Hook Form, dummy data uses BDT, and the UI works at desktop and mobile widths.
 - Loading, empty, error, confirmation, success, and disabled states are represented where appropriate.
 - No ecommerce or recurring-subscription behavior is introduced.
 - `npm run lint` and `npm run build` pass.
 
 ## Manual Testing Steps
 
-1. Visit `/dashboard`, collapse and reopen the sidebar, and verify active navigation.
-2. Test `/customers`, search/filter rows, open a customer detail page, and submit the customer form with invalid and valid values.
-3. Test product, supplier, employee, role, settings, and tenant forms for field-level validation.
-4. Open `/sales/new`, add/remove line items, change quantities/prices, and verify totals and validation feedback.
-5. Repeat the line-item workflow for purchase and return pages.
-6. Check list/detail pages for invoices, payments, inventory, and audit logs.
-7. Check report filters and responsive table/chart behavior.
-8. Resize to mobile width and verify navigation, forms, tables, dialogs, and primary actions remain usable.
-9. Run `npm run lint` and `npm run build`.
+1. Visit `http://localhost:3000/admin/tenants`, open the new-tenant form, and verify admin validation.
+2. Visit `/login`, `/register`, and `/forgot-password`; verify the auth shell is separate.
+3. Visit `http://abc.localhost:3000/` and verify tenant context and dashboard.
+4. Navigate through tenant customers, products, inventory, purchasing, sales, returns, invoices, payments, reports, employees, roles, notifications, audit logs, and settings.
+5. Test tenant detail pages and create forms with invalid and valid values.
+6. Test line-item totals and validation on sales, purchases, and returns.
+7. Verify tenant links never expose `/s/abc`; change `abc` to another slug and verify tenant-scoped dummy data changes.
+8. Verify a tenant-origin request cannot render platform admin pages.
+9. Resize to mobile and verify all shells, forms, tables, dialogs, and primary actions remain usable.
+10. Run `npm run lint` and `npm run build`.
