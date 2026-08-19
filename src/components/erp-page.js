@@ -12,6 +12,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { getTenantData } from "@/lib/erp-data";
+import DomainForm from "@/components/domain-form";
 
 const money = new Intl.NumberFormat("en-BD", {
   style: "currency",
@@ -140,13 +141,22 @@ export default function ErpPage({
   section,
   detailId,
   form = false,
+  formType,
+  action,
 }) {
   const data = getTenantData(subdomain);
   const [query, setQuery] = useState("");
   const title = labels[section] || "Workspace";
   if (section === "dashboard")
     return <Dashboard data={data} subdomain={subdomain} />;
-  if (form) return <FormView section={section} subdomain={subdomain} />;
+  if (form)
+    return (
+      <DomainForm
+        type={formType || section}
+        subdomain={subdomain}
+        action={action}
+      />
+    );
   if (detailId)
     return <DetailView section={section} detailId={detailId} data={data} />;
   const source =
@@ -186,15 +196,21 @@ export default function ErpPage({
         action={
           section === "customers" ||
           section === "products" ||
-          section === "suppliers"
+          section === "suppliers" ||
+          section === "categories" ||
+          section === "employees" ||
+          section === "roles" ||
+          section === "payments"
             ? `Add ${title.slice(0, -1)}`
-            : section === "sales" ||
-                section === "purchases" ||
-                section === "returns"
-              ? `New ${title.slice(0, -1)}`
-              : null
+            : section === "inventory"
+              ? "Adjust stock"
+              : section === "sales" ||
+                  section === "purchases" ||
+                  section === "returns"
+                ? `New ${title.slice(0, -1)}`
+                : null
         }
-        href={`/${section}/new`}
+        href={section === "inventory" ? "/inventory/adjust" : `/${section}/new`}
       />
       <div className="mb-5 flex flex-col gap-3 sm:flex-row">
         <SearchBar value={query} onChange={setQuery} />

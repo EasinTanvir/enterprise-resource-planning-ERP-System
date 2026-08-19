@@ -1,5 +1,5 @@
-import ErpPage from "@/components/erp-page";
+import DomainForm from "@/components/domain-form";
 export default async function TaxSettingsPage({ params }) {
   const { subdomain } = await params;
-  return <ErpPage subdomain={subdomain} section="settings" />;
+  return <DomainForm type="tax" subdomain={subdomain} />;
 }

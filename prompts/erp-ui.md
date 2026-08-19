@@ -28,7 +28,7 @@ Build the complete frontend UI for the physical-retail ERP with realistic determ
 
 This is a multi-tenant SaaS ERP for physical retail organizations. The main domain belongs to the platform owner, who creates and manages organizations. Each organization operates its own ERP workspace on a subdomain.
 
-UI scope includes dashboard, customers, products, categories, inventory, suppliers, purchasing, sales, returns, invoices, payments, reports, employees, roles, notifications, audit logs, and settings.
+UI scope includes dashboard, tenant management, lifetime licensing, customers, products, categories, inventory, stock movements, suppliers, purchasing, physical sales, sales returns, invoicing, payments, reports, employees, roles, permissions, notifications, audit logs, and company settings.
 
 Do not add ecommerce, online storefronts, shopping carts, online checkout, online ordering, marketplace features, recurring subscriptions, complex accounting, payroll, HR, manufacturing, or unrelated modules.
 
@@ -89,6 +89,107 @@ Implement these pages under `src/app/(tenants)/s/[subdomain]/` with a shared ten
 - `/audit-logs`
 - `/settings/company`, `/settings/invoice`, `/settings/tax`, and `/settings/profile`
 
+## Required Tenant Forms and Actions
+
+Every form must be a real structured UI with labeled fields, validation, cancel/back behavior, disabled/pending state, success feedback, error feedback, and local dummy-state submission. Do not use a generic placeholder form for multiple unrelated domains.
+
+### Customer forms and actions
+
+- `/customers/new`: create customer with name, phone, email, address, and status.
+- `/customers/[customerId]/edit`: edit customer details and active/inactive status.
+- Customer detail actions: deactivate/reactivate customer, view purchase history, sales history, invoices, and payments.
+
+### Product and category forms and actions
+
+- `/products/new`: create product with name, SKU, description, image placeholder, category, purchase price, selling price, reorder level, and status.
+- `/products/[productId]/edit`: edit product information, pricing, stock threshold, and status.
+- `/categories/new`: create category with name, description, and status.
+- `/categories/[categoryId]/edit`: edit category and manage its assigned products.
+- Product/category actions: deactivate product, deactivate category, assign category, and filter products by category.
+
+### Inventory and stock movement forms/actions
+
+- `/inventory/adjust`: approved manual stock adjustment with product, quantity, direction, reason, reference, and notes.
+- `/inventory/movements/[movementId]`: immutable movement detail with product, quantity, type, reference, actor, tenant, and timestamp.
+- Inventory actions: receive stock, reduce damaged stock, approve adjustment, and create a compensating adjustment. Never silently change stock.
+
+### Supplier forms and actions
+
+- `/suppliers/new`: create supplier with name, phone, email, address, and status.
+- `/suppliers/[supplierId]/edit`: edit supplier details and active/inactive status.
+- Supplier detail actions: deactivate/reactivate supplier and view purchase history.
+
+### Purchasing forms and actions
+
+- `/purchases/new`: create purchase order with supplier, product line items, quantities, purchase prices, discount, tax, notes, subtotal, and total.
+- `/purchases/[purchaseId]/edit`: edit a draft purchase order.
+- `/purchases/[purchaseId]/receive`: receive products with received quantities, receiving date, and notes.
+- Purchase actions: save draft, confirm purchase, receive purchase, cancel purchase, and view stock movements created by receiving.
+- Draft purchases must not increase inventory; receiving is the inventory-changing action in the UI workflow.
+
+### Physical sales forms and actions
+
+- `/sales/new`: create physical sale with find/create customer, product line items, quantities, prices, discount, tax, payment method, payment amount, subtotal, and total.
+- `/sales/[saleId]/edit`: edit an unconfirmed sale.
+- `/sales/[saleId]/payment`: record full or partial payment linked to the sale/invoice.
+- Sales actions: confirm sale, cancel sale, record payment, generate invoice, and view inventory movements.
+- Include insufficient-stock, invalid-quantity, partial-payment, paid, unpaid, and cancelled states in the UI.
+
+### Return forms and actions
+
+- `/returns/new`: find the original sale, select returned products, enter return quantities and reason, and show refund/adjustment summary.
+- `/returns/[returnId]/edit`: edit a pending return before approval.
+- `/returns/[returnId]/approve`: review and approve or reject a return.
+- Return actions: validate original sale, approve, reject, restock, refund, and create payment adjustment. Do not support arbitrary returns without an original sale reference.
+
+### Invoice and payment forms/actions
+
+- `/invoices/[invoiceId]/edit`: edit only allowed draft invoice metadata.
+- `/invoices/[invoiceId]/pdf`: invoice preview/print layout with invoice number, customer, items, pricing, discounts, tax, total, and payment status.
+- `/payments/new`: record payment with invoice/sale reference, amount, method, date, status, and notes.
+- `/payments/[paymentId]/edit`: correct pending payment metadata without changing historical records silently.
+- Invoice/payment actions: generate invoice, print/download preview, email preview, record partial payment, mark paid, and show unpaid history.
+- Payment methods must include Cash, Card, Bank Transfer, Mobile Banking, and a clearly labeled `Other` option. Do not label any payment flow as ecommerce cash-on-delivery.
+
+### Employee, role, and permission forms/actions
+
+- `/employees/new`: create employee with name, email, optional phone, status, role, and invitation state.
+- `/employees/[employeeId]/edit`: edit employee profile, status, role, and permissions.
+- `/roles/new`: create role with name, description, and permission matrix.
+- `/roles/[roleId]/edit`: edit role permissions by module/action.
+- Employee/role actions: deactivate employee, assign role, assign permissions, and review employee activity/sales.
+- Represent the roles Super Admin, Tenant Admin, Manager, Sales Employee, and Inventory Employee. Demonstrate granular permissions such as `customers.view`, `sales.create`, `inventory.adjust`, `users.manage`, and `settings.update`.
+
+### Settings forms
+
+- `/settings/company`: company name, logo placeholder, email, phone, address, website, and currency.
+- `/settings/invoice`: invoice prefix, numbering preview, footer, and business information.
+- `/settings/tax`: tax enabled state, tax rate, and tax labels.
+- `/settings/profile`: current user name, email, phone, password placeholder, and notification preferences.
+
+### Platform/super-admin forms and actions
+
+- `/admin/tenants/new`: organization name, slug, owner/admin name, email, optional phone, initial status, and lifetime license activation.
+- `/admin/tenants/[tenantId]/edit`: edit organization profile and administrator details.
+- `/admin/tenants/[tenantId]/license`: view and manage lifetime license state: Active, Suspended, or Revoked.
+- `/admin/tenants/[tenantId]/administrators`: view, invite, update, deactivate, and assign tenant administrators.
+- Platform actions: create organization, view organization, activate, suspend, revoke license, manage administrators, and view platform statistics.
+- Platform dummy data must remain separate from tenant business data.
+
+## Workflow State Requirements
+
+Represent realistic state transitions with local dummy data and visible status badges/actions:
+
+- Organization/license: Active, Suspended, Revoked.
+- Customer/product/supplier/employee: Active, Inactive.
+- Purchase: Draft, Confirmed, Received, Cancelled.
+- Sale: Draft, Confirmed, Cancelled.
+- Invoice/payment: Unpaid, Partial, Paid, Refunded, Failed where relevant.
+- Return: Pending, Approved, Rejected, Restocked, Refunded.
+- Inventory movement: Purchase, Sale, Return, Adjustment, Damage.
+
+Critical actions should use confirmation dialogs and show the resulting local state. Financial and stock records should prefer status changes, reversal, or compensating entries over destructive deletion.
+
 Dynamic pages must read route params and render tenant-specific records. Do not hard-code one tenant into page components.
 
 ## Platform Admin Page Requirements
@@ -109,6 +210,7 @@ Use platform-level dummy data separate from tenant business data. Do not display
 - Use separate but related auth, admin, and tenant shells.
 - Use client components only for interaction or local state.
 - Use local deterministic dummy data; do not invent backend APIs or pretend mutations persist remotely.
+- Use a reusable form system, but keep domain-specific fields and validation visible. Use `react-hook-form` for all interactive forms and field-level messages for required values, email/phone formats, slug/SKU formats, numeric ranges, quantities, prices, taxes, and payment amounts.
 - Use `subdomain` from the dynamic route as UI context. It is not an authorization mechanism.
 - Reuse data-driven components instead of duplicating shell, table, or form markup.
 - Use `react-hook-form` for interactive forms with accessible field-level validation messages.
@@ -122,6 +224,7 @@ Use platform-level dummy data separate from tenant business data. Do not display
 - Auth shell: focused login, registration, and recovery experience without tenant navigation.
 - Lists: search/filter, realistic rows, primary action, pagination or compact alternative, and all meaningful states.
 - Details: summary, activity/history, status, and contextual actions.
+- Forms: complete create/edit/action flows for every form listed in `Required Tenant Forms and Actions`; no dead primary buttons.
 - Sales, purchasing, and returns: line-item entry, quantities, prices, discounts, tax, totals, and validation.
 - Reports: filters, KPI summaries, visual summaries, and tabular details.
 - Use believable Bangladesh retail examples and BDT currency formatting.
@@ -148,10 +251,11 @@ Use platform-level dummy data separate from tenant business data. Do not display
 3. Build separate auth, admin, and tenant layouts.
 4. Make root and nested subdomain paths rewrite correctly while keeping `/s/[subdomain]` internal.
 5. Build shared primitives and deterministic platform/tenant data helpers.
-6. Add all tenant and platform admin pages in the inventory above.
-7. Add host-aware navigation, responsive behavior, dialogs, toasts, and validation.
-8. Add route-level loading, empty, error, and not-found handling where appropriate.
-9. Run frontend checks and fix only issues caused by this work.
+6. Add every list, detail, create, edit, approval, receiving, payment, invoice, license, administrator, and adjustment route listed above.
+7. Implement reusable form primitives plus domain-specific fields, validation, confirmation dialogs, local submission state, and status transitions.
+8. Add host-aware navigation, responsive behavior, dialogs, toasts, and validation.
+9. Add route-level loading, empty, error, and not-found handling where appropriate.
+10. Run frontend checks and fix only issues caused by this work.
 
 ## Acceptance Criteria
 
@@ -160,7 +264,12 @@ Use platform-level dummy data separate from tenant business data. Do not display
 - Supported tenant paths work from a subdomain without exposing `/s/[subdomain]` in browser-facing links.
 - Tenant UI data changes with the subdomain context and is never mixed with platform-admin data.
 - A subdomain cannot enter the platform admin shell through normal tenant navigation.
-- Components are reusable, forms use React Hook Form, dummy data uses BDT, and the UI works at desktop and mobile widths.
+- Every required feature has its own list/detail/create/edit/action surface where listed above.
+- Every primary create/edit/action button opens a meaningful form or workflow and has validation, pending, success, error, cancel, and confirmation behavior where appropriate.
+- Forms use React Hook Form with domain-specific fields; sales, purchases, returns, invoices, payments, inventory, and licensing expose their relevant business fields.
+- Dummy data uses BDT and includes both `abc` and `xyz` tenant contexts with visibly different records.
+- Purchase receiving, sale confirmation, return approval, payment recording, and inventory adjustment show the related local status/stock effects.
+- Components are reusable and the UI works at desktop and mobile widths.
 - Loading, empty, error, confirmation, success, and disabled states are represented where appropriate.
 - No ecommerce or recurring-subscription behavior is introduced.
 - `npm run lint` and `npm run build` pass.
@@ -171,9 +280,12 @@ Use platform-level dummy data separate from tenant business data. Do not display
 2. Visit `/login`, `/register`, and `/forgot-password`; verify the auth shell is separate.
 3. Visit `http://abc.localhost:3000/` and verify tenant context and dashboard.
 4. Navigate through tenant customers, products, inventory, purchasing, sales, returns, invoices, payments, reports, employees, roles, notifications, audit logs, and settings.
-5. Test tenant detail pages and create forms with invalid and valid values.
-6. Test line-item totals and validation on sales, purchases, and returns.
-7. Verify tenant links never expose `/s/abc`; change `abc` to another slug and verify tenant-scoped dummy data changes.
-8. Verify a tenant-origin request cannot render platform admin pages.
-9. Resize to mobile and verify all shells, forms, tables, dialogs, and primary actions remain usable.
-10. Run `npm run lint` and `npm run build`.
+5. Test customer, product, category, supplier, employee, role, company, invoice, tax, profile, and tenant administrator forms with invalid and valid values.
+6. Test line-item totals, discounts, tax, quantities, insufficient stock, and payment states on sales, purchases, and returns.
+7. Test purchase draft -> confirm -> receive, sale draft -> confirm -> payment -> invoice, and return pending -> approve/reject -> restock/refund flows.
+8. Test inventory adjustment and damage forms, verifying movement details and compensating-entry messaging.
+9. Test platform organization activation/suspension and lifetime license Active/Suspended/Revoked states.
+10. Verify tenant links never expose `/s/abc`; change `abc` to `xyz` and verify tenant-scoped data, names, metrics, and records change.
+11. Verify a tenant-origin request cannot render platform admin pages.
+12. Resize to mobile and verify all shells, forms, tables, dialogs, and primary actions remain usable.
+13. Run `npm run lint` and `npm run build`.
