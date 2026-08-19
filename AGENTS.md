@@ -1704,9 +1704,7 @@ I prepared the implementation prompt at prompts/<feature>.md.
 Is this good to execute?
 ```
 
-11. Wait for approval.
-
-12. After approval, re-read the approved prompt.
+12. On approval re read approved prompt file in the prompts/ and implement it strictly. Wait for approval.
 
 13. Implement the feature strictly according to the approved prompt.
 
