@@ -1,7 +1,6 @@
-import React from "react";
+import ErpPage from "@/components/erp-page";
 
-const ProductsPage = () => {
-  return <div>ProductsPage</div>;
-};
-
-export default ProductsPage;
+export default async function ProductsPage({ params }) {
+  const { subdomain } = await params;
+  return <ErpPage subdomain={subdomain} section="products" />;
+}

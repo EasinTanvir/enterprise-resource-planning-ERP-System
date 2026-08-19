@@ -1,5 +1,4 @@
 import AdminPage from "@/components/admin-page";
-
-export default function AddTenant() {
+export default function NewAdminTenantPage() {
   return <AdminPage mode="form" />;
 }

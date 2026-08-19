@@ -1,7 +1,5 @@
-import React from "react";
+import { AdminShell } from "@/components/erp-shell";
 
-const AdminLayout = ({ children }) => {
-  return <div>{children}</div>;
-};
+const AdminLayout = ({ children }) => <AdminShell>{children}</AdminShell>;
 
 export default AdminLayout;

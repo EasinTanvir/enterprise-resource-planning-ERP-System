@@ -45,14 +45,20 @@ export async function proxy(request) {
   const subdomain = extractSubdomain(request);
 
   if (subdomain) {
-    // Block access to admin page from subdomains
-    // if (pathname.startsWith("/admin")) {
-    //   return NextResponse.redirect(new URL("/", request.url));
-    // }
+    if (
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/register")
+    ) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
 
-    // For the root path on a subdomain, rewrite to the subdomain page
-    if (pathname === "/") {
-      return NextResponse.rewrite(new URL(`/s/${subdomain}`, request.url));
+    const internalPath =
+      pathname === "/" ? `/s/${subdomain}` : `/s/${subdomain}${pathname}`;
+    if (!pathname.startsWith(`/s/${subdomain}`)) {
+      return NextResponse.rewrite(
+        new URL(`${internalPath}${request.nextUrl.search}`, request.url),
+      );
     }
   }
 

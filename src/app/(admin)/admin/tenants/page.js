@@ -1,5 +1,4 @@
 import AdminPage from "@/components/admin-page";
-
-export default function TenantsPage() {
+export default function AdminTenantsPage() {
   return <AdminPage />;
 }
