@@ -2164,6 +2164,52 @@ Run build checks whenever configuration, routing, middleware, authentication, or
 
 Never claim a command passed unless it was actually executed.
 
+/
+├── login
+├── forgot-password
+│
+├── dashboard
+├── customers
+│ └── [customerId]
+├── products
+│ └── [productId]
+├── categories
+├── inventory
+│ └── movements
+├── suppliers
+│ └── [supplierId]
+├── purchases
+│ ├── new
+│ └── [purchaseId]
+├── sales
+│ ├── new
+│ └── [saleId]
+├── returns
+│ ├── new
+│ └── [returnId]
+├── invoices
+│ └── [invoiceId]
+├── payments
+│ └── [paymentId]
+├── reports
+├── employees
+│ └── [employeeId]
+├── roles
+│ └── [roleId]
+├── notifications
+├── audit-logs
+│
+├── settings
+│ ├── company
+│ ├── invoice
+│ ├── tax
+│ └── profile
+│
+└── admin
+└── tenants
+├── new
+└── [tenantId]
+
 ---
 
 # 62. Manual Testing
