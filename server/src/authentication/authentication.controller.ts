@@ -7,7 +7,9 @@ import { Public } from '../common/auth/public.decorator';
 @Controller('authentication')
 export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
-  @Public() @Post('login') async login(@Body() dto: LoginDto) {
+  @Public()
+  @Post('login')
+  async login(@Body() dto: LoginDto) {
     return this.authenticationService.login(
       await this.authenticationService.validateCredentials(
         dto.email,
@@ -15,7 +17,10 @@ export class AuthenticationController {
       ),
     );
   }
-  @Public() @Get('google') @UseGuards(AuthGuard('google')) google() {
+  @Public()
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  google() {
     return;
   }
   @Public()
