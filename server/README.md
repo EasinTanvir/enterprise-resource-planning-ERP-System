@@ -96,3 +96,32 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## ERP database
+
+The NestJS backend owns the ERP database. Drizzle is the sole schema and
+migration manager. Keep the existing `DATABASE_URL` private; it is the fallback
+pooled Neon URL for local application traffic. Set `DATABASE_URL_UNPOOLED` to a
+direct Neon connection (host without `-pooler`) before generating or applying
+migrations.
+
+```powershell
+npm.cmd run db:generate
+npm.cmd run db:migrate
+```
+
+Do not use `drizzle-kit push` against a shared database. Review generated SQL,
+test it on a Neon development branch, and apply it using the direct URL.
+
+Tenant-owned tables enforce PostgreSQL RLS. Backend code must derive a tenant
+from authenticated server-side context, then call
+`TenantTransactionService.withTenant()` for all tenant queries. This sets the
+tenant context transaction-locally, which is safe with pooled connections. A
+client-provided tenant ID is never an authorization source.
+
+For production, provision the dedicated non-owner `omnierp_app` database role
+from `drizzle/rls-runtime-role.sql.example`, set its pooled connection as
+`DATABASE_APP_URL`, and keep the migration owner URL separate. The runtime role
+is intentionally not created by a normal schema migration because Neon project
+credentials may not have `CREATEROLE`, and a password must never enter source
+control.

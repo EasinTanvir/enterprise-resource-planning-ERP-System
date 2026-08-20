@@ -1,0 +1,11 @@
+-- Execute once as a privileged Neon database administrator after the migrations.
+-- Replace the placeholder with a generated secret; never commit the real URL.
+CREATE ROLE omnirep_app LOGIN NOINHERIT PASSWORD 'replace-with-a-generated-secret';
+GRANT CONNECT ON DATABASE neondb TO omnirep_app;
+GRANT USAGE ON SCHEMA public TO omnirep_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO omnirep_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO omnirep_app;
+
+-- Set DATABASE_APP_URL with this role's pooled Neon URL before production use.
+-- The forced RLS policies still require app.current_tenant_id for tenant tables.
