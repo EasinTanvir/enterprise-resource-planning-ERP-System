@@ -32,11 +32,13 @@ export class AuthenticationController {
     return this.authenticationService.login(user);
   }
 
-  @Get('me') me(@CurrentUser() user: SafeUser) {
+  @Get('me')
+  me(@CurrentUser() user: SafeUser) {
     return user;
   }
 
-  @Get('health') health(@CurrentUser() user: SafeUser) {
+  @Get('health')
+  health(@CurrentUser() user: SafeUser) {
     return { authenticated: true, userId: user.id };
   }
 }
