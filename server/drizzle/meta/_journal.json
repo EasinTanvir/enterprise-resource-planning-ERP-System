@@ -15,6 +15,13 @@
       "when": 1787201620189,
       "tag": "0001_tenant_rls_and_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787205951833,
+      "tag": "0002_youthful_thor",
+      "breakpoints": true
     }
   ]
 }

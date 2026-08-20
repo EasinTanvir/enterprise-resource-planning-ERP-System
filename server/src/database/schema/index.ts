@@ -87,13 +87,17 @@ export const movementTypeEnum = pgEnum('stock_movement_type', [
   'damage',
   'opening_balance',
 ]);
+export const authProviderEnum = pgEnum('auth_provider', [
+  'credentials',
+  'google',
+]);
 
 export const users = pgTable(
   'users',
   {
     id: uuid('id').defaultRandom().primaryKey(),
     email: varchar('email', { length: 320 }).notNull(),
-    passwordHash: text('password_hash').notNull(),
+    passwordHash: text('password_hash'),
     firstName: varchar('first_name', { length: 120 }).notNull(),
     lastName: varchar('last_name', { length: 120 }).notNull(),
     phone: varchar('phone', { length: 40 }),
@@ -102,6 +106,29 @@ export const users = pgTable(
     ...auditColumns,
   },
   (t) => [uniqueIndex('users_email_unique').on(t.email)],
+);
+export const userAuthAccounts = pgTable(
+  'user_auth_accounts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    provider: authProviderEnum('provider').notNull(),
+    providerAccountId: varchar('provider_account_id', {
+      length: 320,
+    }).notNull(),
+    providerEmail: varchar('provider_email', { length: 320 }),
+    ...auditColumns,
+  },
+  (t) => [
+    unique('user_auth_accounts_provider_account_unique').on(
+      t.provider,
+      t.providerAccountId,
+    ),
+    unique('user_auth_accounts_user_provider_unique').on(t.userId, t.provider),
+    index('user_auth_accounts_user_idx').on(t.userId),
+  ],
 );
 export const tenants = pgTable(
   'tenants',
