@@ -1,9 +1,15 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { and, eq } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.provider';
 import { users, userAuthAccounts } from '../database/schema';
+import { RegisterDto } from './dto/register.dto';
 
 export type SafeUser = {
   id: string;
@@ -49,6 +55,43 @@ export class AuthenticationService {
       tokenType: 'Bearer',
       user,
     };
+  }
+
+  async register(dto: RegisterDto) {
+    const email = this.normalizeEmail(dto.email);
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    try {
+      const user = await this.database.transaction(async (transaction) => {
+        const [createdUser] = await transaction
+          .insert(users)
+          .values({
+            email,
+            passwordHash,
+            firstName: dto.firstName.trim(),
+            lastName: dto.lastName.trim(),
+            phone: dto.phone?.trim() || null,
+            isActive: true,
+            isPlatformAdmin: false,
+          })
+          .returning();
+        if (!createdUser) throw new Error('User creation returned no record.');
+        await transaction.insert(userAuthAccounts).values({
+          userId: createdUser.id,
+          provider: 'credentials',
+          providerAccountId: email,
+          providerEmail: email,
+        });
+        return this.toSafeUser(createdUser);
+      });
+      return this.login(user);
+    } catch (error: unknown) {
+      if (this.isUniqueViolation(error)) {
+        throw new ConflictException(
+          'An account with this email already exists.',
+        );
+      }
+      throw error;
+    }
   }
   async getActiveUser(userId: string): Promise<SafeUser> {
     const [user] = await this.database
@@ -113,6 +156,14 @@ export class AuthenticationService {
   }
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+  private isUniqueViolation(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === '23505'
+    );
   }
   private toSafeUser(user: typeof users.$inferSelect): SafeUser {
     return {
