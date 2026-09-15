@@ -4,7 +4,7 @@ import Link from "next/link";
 const RegisterPage = () => (
   <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
     <Link href="/" className="text-xl font-bold tracking-tight">
-      OMNI<span className="text-accent">ERP</span>
+      OMNI<span className="text-accent">ERP System</span>
     </Link>
     <div className="mt-10 rounded-lg border border-line bg-panel p-7">
       <p className="text-xs font-semibold uppercase tracking-[.16em] text-accent">
