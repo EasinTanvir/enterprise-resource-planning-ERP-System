@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Access | OmniERP System",
+  title: "Access | OmniERP",
   description: "Sign in to OmniERP System",
 };
 export default function AuthLayout({ children }) {
