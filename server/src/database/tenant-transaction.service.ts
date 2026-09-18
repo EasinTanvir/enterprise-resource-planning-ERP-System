@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
+
 import { DATABASE, type Database } from './database.provider';
 
 type TenantTransaction = Parameters<Parameters<Database['transaction']>[0]>[0];
