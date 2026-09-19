@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "OmniERP System | Retail operations",
+  title: "OmniERP  | Retail operations",
   description: "Physical retail operations workspace",
 };
 
