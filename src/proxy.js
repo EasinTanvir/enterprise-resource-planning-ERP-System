@@ -60,7 +60,7 @@ export async function proxy(request) {
     }
   }
 
-  // On the root domain, allow normal access
+  // On the root domain, allow normal access here
   return NextResponse.next();
 }
 
