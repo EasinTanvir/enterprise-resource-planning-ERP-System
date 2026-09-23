@@ -7,7 +7,7 @@ export default function HomePage() {
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-8 lg:px-10">
         <header className="flex items-center justify-between">
           <p className="text-xl font-bold tracking-tight">
-            OMNI<span className="text-accent">ERP</span>
+            OMNI<span className="text-accent">ERP System</span>
           </p>
           <Link
             href="/login"
