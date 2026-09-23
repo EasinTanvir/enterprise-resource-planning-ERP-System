@@ -1,5 +1,4 @@
 import Link from "next/link";
-
 import { ArrowUpRight, Building2, Globe2, ShieldCheck } from "lucide-react";
 
 export default function HomePage() {
